@@ -31,5 +31,3 @@ if [ ! -f ./lh.parc.nii.gz ] || [ ! -f ./rh.parc.nii.gz ] ; then
 	echo "something went wrong. check logs and derivatives"
 	exit 1
 fi
-
-echo "complete"
