@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=4,walltime=0:30:00
+#PBS -N app-annotation-to-parcellation
+#PBS -l vmem=20gb
+#PBS -V
+
+[ -z "$FREESURFER_LICENSE" ] && echo "Please set FREESURFER_LICENSE in .bashrc" && exit 1;
+echo $FREESURFER_LICENSE > license.txt
+
+# convert annotation to parcellations
+[ ! -f ./lh.parc.nii.gz ] || [ ! -f ./rh.parc.nii.gz ] && time singularity exec -e -B `pwd`/license.txt:/usr/local/freesurfer/license.txt docker://brainlife/freesurfer:7.3.2 ./convert.sh
+
+# grab labels
+ [ ! -f lh.label_text.txt ] || [ ! -f rh.label_text.txt ] && time singularity exec -e -B `pwd`/license.txt:/usr/local/freesurfer/license.txt docker://brainlife/connectome_workbench:1.5.0 ./labels.sh
+
+# combine into single parcellation and update labels
+[ ! -f ./parcellation/parc.nii.gz ] || [ ! -f ./parcellation/label.json ] && time singularity exec -e docker://brainlife/dipy:1.4.1 ./build_parc.py
+
+if [ ! -f ./parcellation/parc.nii.gz ] || [ ! -f ./parcellation/label.json ]; then
+	echo "something went wrong. check logs and derivatives"
+	exit 1
+fi
+
+mv *.nii.gz *.txt *.gii ./raw/ && echo "complete"
